@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إتمام الطلب | أثر</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header id="site-header" class="site-header"></header>
+
+<main>
+  <div class="container">
+    <div class="breadcrumbs"><a href="index.html">الرئيسية</a> / <a href="cart.html">السلة</a> / إتمام الطلب</div>
+    <div id="checkout-root"></div>
+  </div>
+</main>
+
+<footer id="site-footer" class="site-footer"></footer>
+
+<script src="js/icons.js"></script>
+<script src="js/data.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/layout.js"></script>
+<script>
+renderHeader('shop');
+const root = document.getElementById('checkout-root');
+
+function renderCheckout(){
+  const lines = cartLinesWithProducts();
+  if(lines.length === 0){
+    root.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.4"><path d="M3 4h2l2.4 12.4a2 2 0 002 1.6h8.2a2 2 0 002-1.6L21 8H6"/><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>
+        <h3>لا يمكنك إتمام الطلب</h3>
+        <p>سلتك فارغة — أضيفي منتجات أولًا للمتابعة.</p>
+        <a href="products.html" class="btn btn-primary">تصفّحي المتجر</a>
+      </div>`;
+    return;
+  }
+
+  root.innerHTML = `
+    <div class="section-head" style="margin:22px 0 6px;">
+      <div><span class="eyebrow">آخر خطوة</span><h2>إتمام الطلب</h2></div>
+    </div>
+    <div class="checkout-wrap">
+      <form id="checkout-form">
+        <div class="form-section">
+          <h3><span class="num">1</span> بيانات التوصيل</h3>
+          <div class="form-row">
+            <div class="field"><label>الاسم الكامل</label><input type="text" required></div>
+            <div class="field"><label>رقم الهاتف</label><input type="tel" required placeholder="05X-XXX-XXXX"></div>
+          </div>
+          <div class="form-row single">
+            <div class="field"><label>البريد الإلكتروني</label><input type="email" required></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>المدينة</label>
+              <select required>
+                <option value="">اختاري المدينة</option>
+                <option>نابلس</option><option>رام الله</option><option>الخليل</option>
+                <option>بيت لحم</option><option>جنين</option><option>طولكرم</option><option>أخرى</option>
+              </select>
+            </div>
+            <div class="field"><label>الحي / المنطقة</label><input type="text" required></div>
+          </div>
+          <div class="form-row single">
+            <div class="field"><label>تفاصيل العنوان (شارع، مبنى، ملاحظات)</label><input type="text" required></div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3><span class="num">2</span> طريقة الدفع</h3>
+          <div class="pay-methods" id="pay-methods">
+            <label class="pay-method selected">
+              <input type="radio" name="pay" value="cod" checked>
+              <div><b>الدفع عند الاستلام</b><div style="font-size:12px; color:var(--rose);">ادفعي نقدًا عند وصول الطلب</div></div>
+            </label>
+            <label class="pay-method">
+              <input type="radio" name="pay" value="card">
+              <div><b>بطاقة ائتمان / مدى</b><div style="font-size:12px; color:var(--rose);">دفع آمن ومشفّر بالكامل</div></div>
+            </label>
+          </div>
+          <div id="card-fields" style="display:none; margin-top:16px;">
+            <div class="form-row single"><div class="field"><label>رقم البطاقة</label><input type="text" placeholder="•••• •••• •••• ••••"></div></div>
+            <div class="form-row">
+              <div class="field"><label>تاريخ الانتهاء</label><input type="text" placeholder="MM/YY"></div>
+              <div class="field"><label>CVC</label><input type="text" placeholder="•••"></div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit">تأكيد الطلب — ${formatPrice(cartTotal())}</button>
+      </form>
+
+      <aside class="order-summary">
+        <h3>ملخص الطلب</h3>
+        ${lines.map(l => `
+          <div class="mini-line">
+            <div class="cl-media">${iconFor(l.product.category)}</div>
+            <div style="flex:1;">
+              <div class="cl-name">${l.product.name}</div>
+              <div class="qty-tag">الكمية: ${l.qty}</div>
+            </div>
+            <div class="cl-price">${formatPrice(l.product.price * l.qty)}</div>
+          </div>
+        `).join('')}
+        <div class="summary-row" style="margin-top:14px;"><span>المجموع الفرعي</span><span>${formatPrice(cartSubtotal())}</span></div>
+        <div class="summary-row"><span>الشحن</span><span>${shippingCost()===0?'مجاني':formatPrice(shippingCost())}</span></div>
+        <div class="summary-row total"><span>الإجمالي</span><span>${formatPrice(cartTotal())}</span></div>
+      </aside>
+    </div>
+  `;
+
+  document.querySelectorAll('input[name="pay"]').forEach(r => r.addEventListener('change', () => {
+    document.querySelectorAll('.pay-method').forEach(m => m.classList.remove('selected'));
+    r.closest('.pay-method').classList.add('selected');
+    document.getElementById('card-fields').style.display = r.value === 'card' ? 'block' : 'none';
+  }));
+
+  document.getElementById('checkout-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const orderNum = 'ATH-' + Math.floor(100000 + Math.random()*899999);
+    saveCart([]);
+    root.innerHTML = `
+      <div class="success-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+        <h2>تم استلام طلبك بنجاح</h2>
+        <p style="color:var(--rose);">شكرًا لثقتك بأثر، سيصلك تأكيد على بريدك الإلكتروني قريبًا.</p>
+        <div class="order-num">رقم الطلب: ${orderNum}</div>
+        <div>
+          <a href="index.html" class="btn btn-primary">العودة للرئيسية</a>
+          <a href="products.html" class="btn btn-outline" style="margin-right:10px;">متابعة التسوّق</a>
+        </div>
+      </div>
+    `;
+  });
+}
+
+renderCheckout();
+</script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سلة الشراء | أثر</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header id="site-header" class="site-header"></header>
+
+<main>
+  <div class="container">
+    <div class="breadcrumbs"><a href="index.html">الرئيسية</a> / سلة الشراء</div>
+    <div class="section-head" style="margin-bottom:6px;">
+      <div><span class="eyebrow">قبل إتمام الطلب</span><h2>سلة الشراء</h2></div>
+    </div>
+
+    <div id="cart-root"></div>
+  </div>
+</main>
+
+<footer id="site-footer" class="site-footer"></footer>
+
+<script src="js/icons.js"></script>
+<script src="js/data.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/layout.js"></script>
+<script>
+renderHeader('shop');
+
+function render(){
+  const lines = cartLinesWithProducts();
+  const root = document.getElementById('cart-root');
+
+  if(lines.length === 0){
+    root.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.4"><path d="M3 4h2l2.4 12.4a2 2 0 002 1.6h8.2a2 2 0 002-1.6L21 8H6"/><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>
+        <h3>سلتك فارغة الآن</h3>
+        <p>لم تُضيفي أي قطعة بعد — تصفّحي المجموعة واختاري ما يناسبك.</p>
+        <a href="products.html" class="btn btn-primary">تصفّحي المتجر</a>
+      </div>`;
+    return;
+  }
+
+  root.innerHTML = `
+    <div class="cart-wrap">
+      <div class="cart-lines">
+        ${lines.map(l => `
+          <div class="cart-line" data-id="${l.id}">
+            <a href="product.html?id=${l.id}" class="cl-media">${iconFor(l.product.category)}</a>
+            <div>
+              <a href="product.html?id=${l.id}"><div class="cl-name">${l.product.name}</div></a>
+              <div class="cl-cat">${getCategoryLabel(l.product.category)}</div>
+              <button class="cl-remove" data-remove="${l.id}">إزالة</button>
+            </div>
+            <div class="qty-box">
+              <button data-minus="${l.id}">−</button>
+              <span>${l.qty}</span>
+              <button data-plus="${l.id}">+</button>
+            </div>
+            <div class="cl-price">${formatPrice(l.product.price * l.qty)}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="summary-card">
+        <h3>ملخص الطلب</h3>
+        <div class="summary-row"><span>المجموع الفرعي</span><span>${formatPrice(cartSubtotal())}</span></div>
+        <div class="summary-row"><span>الشحن</span><span>${shippingCost()===0 ? 'مجاني' : formatPrice(shippingCost())}</span></div>
+        ${cartSubtotal() < FREE_SHIPPING_THRESHOLD ? `<div style="font-size:12px; color:var(--rose); margin-top:-4px;">أضيفي ${formatPrice(FREE_SHIPPING_THRESHOLD - cartSubtotal())} للحصول على شحن مجاني</div>` : ''}
+        <div class="promo-row">
+          <input type="text" placeholder="كود الخصم" id="promo-input">
+          <button class="btn btn-outline btn-sm" id="promo-btn">تطبيق</button>
+        </div>
+        <div class="summary-row total"><span>الإجمالي</span><span>${formatPrice(cartTotal())}</span></div>
+        <a href="checkout.html" class="btn btn-primary btn-block" style="margin-top:18px;">إتمام الطلب</a>
+        <a href="products.html" class="btn btn-outline btn-block" style="margin-top:10px;">متابعة التسوّق</a>
+      </div>
+    </div>
+  `;
+
+  root.querySelectorAll('[data-plus]').forEach(b => b.onclick = () => {
+    const l = getCart().find(x=>x.id===b.dataset.plus); setQty(b.dataset.plus, l.qty+1); render();
+  });
+  root.querySelectorAll('[data-minus]').forEach(b => b.onclick = () => {
+    const l = getCart().find(x=>x.id===b.dataset.minus); setQty(b.dataset.minus, l.qty-1); render();
+  });
+  root.querySelectorAll('[data-remove]').forEach(b => b.onclick = () => { removeFromCart(b.dataset.remove); render(); });
+
+  const promoBtn = document.getElementById('promo-btn');
+  if(promoBtn) promoBtn.onclick = () => showToast('الكود غير صالح أو منتهي الصلاحية');
+}
+
+render();
+</script>
+</body>
+</html>
